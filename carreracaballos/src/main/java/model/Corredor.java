@@ -7,4 +7,6 @@ public class Corredor {
 	private double velociad;
 	private double energia; 
 	private double resistencia; 
+	
+	
 }
