@@ -13,7 +13,6 @@ public class Pista {
 	     this.nombre = nombre;
 	     this.distancia = distancia;
 	     this.corredorSeleccionado = null;
-	     
 	}
 	
 	public String getNombre() {
