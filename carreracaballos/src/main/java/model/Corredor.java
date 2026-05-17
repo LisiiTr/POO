@@ -8,5 +8,7 @@ public class Corredor {
 	private double energia; 
 	private double resistencia; 
 	
-	
+	public void Corredor () {
+		int a = 0;
+	}
 }
