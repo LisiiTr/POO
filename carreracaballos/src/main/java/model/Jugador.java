@@ -5,6 +5,8 @@ public class Jugador {
 	private String nombre;
 	private String mail;
 	private double puntajeAcumulado;
+	private Corredor corredorSeleccionado;
+	
 	
 	public Jugador(int id, String nombre,String mail) {
 		this.id = id;
@@ -32,4 +34,13 @@ public class Jugador {
 	public String getMail() {
 		return mail;
 	}
+	
+	public Corredor getCorredorSeleccionado() {
+		return corredorSeleccionado;
+	}
+
+	public void setCorredorSeleccionado(Corredor corredorSeleccionado) {
+		this.corredorSeleccionado = corredorSeleccionado;
+	}
+	
 }
