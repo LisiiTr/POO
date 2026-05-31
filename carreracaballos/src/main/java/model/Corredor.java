@@ -1,83 +1,102 @@
 package model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import model.estrategias.EstrategiaEquilibrada;
+import model.estrategias.EstrategiaResistente;
+import model.estrategias.EstrategiaVelocista;
+
+@Entity
+@Table(name = "corredores")
 public class Corredor {
-	
-	private double distanciaRecorrida;
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private long id;
+
+	@Column(nullable = false, length = 100)
 	private String nombre;
+
+	@Column(name = "velocidad_base", nullable = false)
 	private double velocidadBase;
-	private double energiaActual; 
+
+	@Column(nullable = false)
 	private double resistencia;
 
-	// Cuando exista la clase EstrategiaAvance, se puede agregar:
-	// private EstrategiaAvance estrategiaAvance;
-	
-	public Corredor() {
-		this.nombre = "";
-		this.velocidadBase = 0;
-		this.resistencia = 0;
-		this.energiaActual = 0;
-		this.distanciaRecorrida = 0;
-	}
-	
-	public Corredor(String nombre, double velocidadBase, double resistencia) {
+	@Column(nullable = false, length = 50)
+	private String estrategiaNombre;
+
+	@Transient
+	private EstrategiaAvance estrategia;
+
+	@Transient
+	private double energiaActual = 100;
+
+	@Transient
+	private double distanciaRecorrida = 0;
+
+	protected Corredor() {}
+
+	public Corredor(String nombre, double velocidadBase, double resistencia, EstrategiaAvance estrategia) {
 		this.nombre = nombre;
 		this.velocidadBase = velocidadBase;
 		this.resistencia = resistencia;
-		this.energiaActual = resistencia;
+		this.estrategia = estrategia;
+		this.estrategiaNombre = estrategia.getNombre();
+		this.energiaActual = 100;
 		this.distanciaRecorrida = 0;
 	}
-	
+
 	public void avanzar(double distanciaRestante) {
-		double metrosAvanzados = velocidadBase;
-		
-		if (energiaActual <= 0) {
+		double metrosAvanzados = getEstrategia().calcularAvance(this);
+		if (metrosAvanzados <= 0){
 			metrosAvanzados = velocidadBase / 2;
-		}
-		
-		if (metrosAvanzados > distanciaRestante) {
+		} 
+		if (metrosAvanzados > distanciaRestante){
 			metrosAvanzados = distanciaRestante;
 		}
-		
-		double gastoEnergia = 1;
-		
-		actualizarDistanciaYEnergia(metrosAvanzados, gastoEnergia);
+		double energiaGastada = getEstrategia().calcularGastoEnergia(this);
+		distanciaRecorrida += metrosAvanzados;
+		energiaActual = energiaActual - energiaGastada;
+		if (energiaActual < 0) {
+			energiaActual = 15;
+		}
 	}
-	
+
 	public void reiniciarEstado() {
 		this.distanciaRecorrida = 0;
-		this.energiaActual = resistencia;
+		this.energiaActual = 100;
 	}
-	
+
 	public boolean llegaAMeta(double distanciaTotal) {
 		return distanciaRecorrida >= distanciaTotal;
 	}
-	
-	public void actualizarDistanciaYEnergia(double metros, double gasto) {
-		this.distanciaRecorrida = this.distanciaRecorrida + metros;
-		this.energiaActual = this.energiaActual - gasto;
-		
-		if (this.energiaActual < 0) {
-			this.energiaActual = 0;
+
+	public long getId()                     { return id; }
+	public String getNombre()               { return nombre; }
+	public double getVelocidadBase()        { return velocidadBase; }
+	public double getResistencia()          { return resistencia; }
+	public double getEnergiaActual()        { return energiaActual; }
+	public double getDistanciaRecorrida()   { return distanciaRecorrida; }
+	public String getEstrategiaNombre()     { return estrategiaNombre; }
+
+	public EstrategiaAvance getEstrategia() {
+		if (estrategia == null) {
+			if ("Velocista".equals(estrategiaNombre)){
+				estrategia = new EstrategiaVelocista();
+			}
+			else if ("Resistente".equals(estrategiaNombre)){
+				estrategia = new EstrategiaResistente();
+			} 
+			else{
+				estrategia = new EstrategiaEquilibrada();
+			}
 		}
-	}
-
-	public double getDistanciaRecorrida() {
-		return distanciaRecorrida;
-	}
-
-	public String getNombre() {
-		return nombre;
-	}
-
-	public double getEnergiaActual() {
-		return energiaActual;
-	}
-
-	public double getVelocidadBase() {
-		return velocidadBase;
-	}
-
-	public double getResistencia() {
-		return resistencia;
+		return estrategia;
 	}
 }

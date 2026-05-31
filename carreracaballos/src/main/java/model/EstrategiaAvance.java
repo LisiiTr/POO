@@ -1,7 +1,7 @@
 package model;
 
 public interface EstrategiaAvance {
-	 double avanzar(Corredor corredor);
-	 double gastarEnergia(Corredor corredor);
-
+	double calcularAvance(Corredor corredor);
+	double calcularGastoEnergia(Corredor corredor);
+	String getNombre();
 }
