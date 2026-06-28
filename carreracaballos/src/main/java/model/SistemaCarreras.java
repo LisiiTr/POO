@@ -1,6 +1,7 @@
 package model;
 
 import dao.CorredorDAO;
+import dao.ICorredorDAO;
 import model.estrategias.EstrategiaEquilibrada;
 import model.estrategias.EstrategiaResistente;
 import model.estrategias.EstrategiaVelocista;
@@ -17,7 +18,10 @@ public class SistemaCarreras {
 
 	private Pista[] pistasDisponibles;
 
-	private SistemaCarreras() {
+	private final ICorredorDAO corredorDAO;
+
+	private SistemaCarreras(ICorredorDAO corredorDAO) {
+		this.corredorDAO = corredorDAO;
 		this.corredoresDisponibles = new Corredor[MAX_CORREDORES];
 		this.cantidadCorredores = 0;
 		inicializarCorredores();
@@ -26,7 +30,7 @@ public class SistemaCarreras {
 
 	public static SistemaCarreras getInstancia() {
 		if (instancia == null) {
-			instancia = new SistemaCarreras();
+			instancia = new SistemaCarreras(new CorredorDAO());
 		}
 		return instancia;
 	}
@@ -35,10 +39,9 @@ public class SistemaCarreras {
 		Corredor[] defaults = crearCorredoresDefault();
 
 		try {
-			CorredorDAO dao = new CorredorDAO();
-			dao.inicializarSiVacio(defaults, defaults.length);
+			corredorDAO.inicializarSiVacio(defaults, defaults.length);
 
-			List<Corredor> deDB = dao.listarTodos();
+			List<Corredor> deDB = corredorDAO.listarTodos();
 			for (Corredor corredor : deDB) {
 				if (cantidadCorredores < MAX_CORREDORES) {
 					corredoresDisponibles[cantidadCorredores++] = corredor;

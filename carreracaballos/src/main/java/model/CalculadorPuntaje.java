@@ -1,6 +1,6 @@
 package model;
 
-public class CalculadorPuntaje {
+public class CalculadorPuntaje implements ICalculadorPuntaje {
 
 	public int calcularPosicion(Corredor caballoDelJugador, Corredor ganador, Corredor segundo) {
 		if (caballoDelJugador == ganador)  return 1;

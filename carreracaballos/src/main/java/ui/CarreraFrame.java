@@ -1,11 +1,13 @@
 package ui;
 
 import controller.CarreraController;
+import dao.CarreraDAO;
+import dao.JugadorDAO;
 import dto.CarreraResultadoDTO;
-import model.Corredor;
-import model.Jugador;
-import model.Pista;
-import model.SistemaCarreras;
+import dto.CorredorDTO;
+import dto.JugadorDTO;
+import dto.PistaDTO;
+import model.CalculadorPuntaje;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,15 +15,15 @@ import java.awt.*;
 public class CarreraFrame extends JFrame {
 
 	// ===== Controller =====
-	private final CarreraController carreraController = new CarreraController();
+	private final CarreraController carreraController = new CarreraController(
+			new JugadorDAO(), new CarreraDAO(), new CalculadorPuntaje());
 
 	// ===== Navegacion =====
 	private final CardLayout cards = new CardLayout();
 	private final JPanel cardContainer = new JPanel(cards);
 
 	// ===== Estado =====
-	private Jugador jugadorActual;
-	private Corredor[] corredoresCarrera;
+	private JugadorDTO jugadorActual;
 	private Timer timerCarrera;
 
 	// ===== Componentes Registro =====
@@ -49,9 +51,6 @@ public class CarreraFrame extends JFrame {
 		cards.show(cardContainer, "registro");
 	}
 
-	// =====================================================
-	// CONSTRUCCION DE PANTALLAS
-	// =====================================================
 
 	private JPanel buildPanelRegistro() {
 		JPanel root = new JPanel(new BorderLayout());
@@ -148,10 +147,6 @@ public class CarreraFrame extends JFrame {
 		return root;
 	}
 
-	// =====================================================
-	// ACCIONES
-	// =====================================================
-
 	private void onRegistrar() {
 		String nombre = nombreField.getText().trim();
 		if (nombre.isEmpty()) {
@@ -163,15 +158,16 @@ public class CarreraFrame extends JFrame {
 	}
 
 	private void prepararSeleccion() {
-		corredoresCarrera = elegirCorredoresCarrera();
+		CorredorDTO[] corredores = carreraController.prepararCarrera();
+
 		lblBienvenida.setText("Hola " + jugadorActual.getNombre() + ", elegí tu caballo:");
 
 		comboCorredores.removeAllItems();
-		for (Corredor c : corredoresCarrera) {
+		for (CorredorDTO c : corredores) {
 			comboCorredores.addItem(c.getNombre()
 				+ "  —  Vel: " + (int) c.getVelocidadBase()
 				+ "  Res: " + (int) c.getResistencia()
-				+ "  (" + c.getEstrategia().getNombre() + ")");
+				+ "  (" + c.getEstrategiaNombre() + ")");
 		}
 		comboCorredores.setEnabled(true);
 		btnIniciarCarrera.setEnabled(true);
@@ -187,13 +183,11 @@ public class CarreraFrame extends JFrame {
 		comboCorredores.setEnabled(false);
 		btnIniciarCarrera.setEnabled(false);
 
-		jugadorActual.seleccionarCorredor(corredoresCarrera[idx]);
-
-		Pista pista = SistemaCarreras.getInstancia().elegirPistaAleatoria();
-		carreraController.iniciarCarrera(pista, corredoresCarrera, jugadorActual);
+		PistaDTO pista = carreraController.iniciarCarrera(idx);
+		CorredorDTO[] estado = carreraController.getCorredoresEstado();
 
 		statusLabel.setText("Carrera en " + pista.getNombre() + " (" + (int) pista.getDistanciaTotal() + "m) — comenzó!");
-		pistaPanel.inicializar(corredoresCarrera, jugadorActual, pista.getDistanciaTotal());
+		pistaPanel.inicializar(estado, pista.getDistanciaTotal());
 
 		timerCarrera = new Timer(350, e -> onTick());
 		timerCarrera.start();
@@ -201,12 +195,15 @@ public class CarreraFrame extends JFrame {
 
 	private void onTick() {
 		boolean finalizada = carreraController.simularTurno();
-		pistaPanel.repaint();
+		CorredorDTO[] estado = carreraController.getCorredoresEstado();
+		pistaPanel.actualizar(estado);
 
-		Corredor lider = getLider();
-		if (lider != null && !finalizada) {
-			statusLabel.setText("Va adelante: " + lider.getNombre()
-				+ "   —   " + String.format("%.0f", lider.getDistanciaRecorrida()) + "m");
+		if (!finalizada) {
+			CorredorDTO lider = carreraController.getLider();
+			if (lider != null) {
+				statusLabel.setText("Va adelante: " + lider.getNombre()
+					+ "   —   " + String.format("%.0f", lider.getDistanciaRecorrida()) + "m");
+			}
 		}
 
 		if (finalizada) {
@@ -229,9 +226,9 @@ public class CarreraFrame extends JFrame {
 
 		String mensaje = "Ganador: " + resultado.getNombreGanador() + "\n"
 			+ "Segundo: " + resultado.getNombreSegundo() + "\n\n"
-			+ "Tu caballo (" + jugadorActual.getCorredorSeleccionado().getNombre() + ") llegó " + pos + "\n"
+			+ "Tu caballo (" + resultado.getNombreCorredorJugador() + ") llegó " + pos + "\n"
 			+ "+" + resultado.getPuntajeObtenido() + " puntos ganados\n"
-			+ "Puntaje acumulado: " + (int) jugadorActual.getPuntajeAcumulado() + " pts";
+			+ "Puntaje acumulado: " + (int) resultado.getPuntajeAcumuladoJugador() + " pts";
 
 		Object[] opciones = { "Jugar otra vez", "Salir" };
 		int opcion = JOptionPane.showOptionDialog(this, mensaje, "Resultado de la carrera",
@@ -247,41 +244,9 @@ public class CarreraFrame extends JFrame {
 		}
 	}
 
-	private Corredor getLider() {
-		Corredor lider = null;
-		for (Corredor corredor : corredoresCarrera) {
-			if (lider == null || corredor.getDistanciaRecorrida() > lider.getDistanciaRecorrida()) {
-				lider = corredor;
-			}
-		}
-		return lider;
-	}
-
-	private Corredor[] elegirCorredoresCarrera() {
-		Corredor[] disponibles = SistemaCarreras.getInstancia().getCorredoresDisponibles();
-		int total = SistemaCarreras.getInstancia().getCantidadCorredores();
-
-		Corredor[] copia = new Corredor[total];
-		for (int i = 0; i < total; i++) copia[i] = disponibles[i];
-
-		for (int i = 0; i < 4; i++) {
-			int j = i + (int)(Math.random() * (total - i));
-			Corredor tmp = copia[i]; copia[i] = copia[j]; copia[j] = tmp;
-		}
-
-		Corredor[] seleccionados = new Corredor[4];
-		for (int i = 0; i < 4; i++) seleccionados[i] = copia[i];
-		return seleccionados;
-	}
-
-	// =====================================================
-	// INNER CLASS — Panel animado de la pista
-	// =====================================================
-
 	class PistaPanel extends JPanel {
 
-		private Corredor[] corredores;
-		private Jugador jugador;
+		private CorredorDTO[] corredores;
 		private double distanciaTotal;
 
 		private final int ALTO_CARRIL    = 70;
@@ -294,10 +259,14 @@ public class CarreraFrame extends JFrame {
 			setBackground(new Color(245, 241, 255));
 		}
 
-		void inicializar(Corredor[] corredores, Jugador jugador, double distanciaTotal) {
+		void inicializar(CorredorDTO[] corredores, double distanciaTotal) {
 			this.corredores = corredores;
-			this.jugador = jugador;
 			this.distanciaTotal = distanciaTotal;
+			repaint();
+		}
+
+		void actualizar(CorredorDTO[] corredores) {
+			this.corredores = corredores;
 			repaint();
 		}
 
@@ -333,9 +302,9 @@ public class CarreraFrame extends JFrame {
 		}
 
 		private void dibujarCarril(Graphics2D g2, int indice, int y, int anchoCarril) {
-			Corredor corredor = corredores[indice];
+			CorredorDTO corredor = corredores[indice];
 			Color colorCaballo = UIUtils.COLORES_CABALLOS[indice % UIUtils.COLORES_CABALLOS.length];
-			boolean esMiCaballo = (jugador != null && corredor == jugador.getCorredorSeleccionado());
+			boolean esMiCaballo = corredor.isEsDelJugador();
 
 			g2.setColor(new Color(210, 240, 215));
 			g2.fillRoundRect(MARGEN_IZQ, y, anchoCarril, ALTO_CARRIL, 14, 14);

@@ -6,7 +6,7 @@ import model.Jugador;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 
-public class JugadorDAO {
+public class JugadorDAO implements IJugadorDAO {
 
 	public void guardar(Jugador jugador) {
 		EntityManager em = JPAUtil.getInstancia().crearEntityManager();
@@ -26,10 +26,7 @@ public class JugadorDAO {
 		EntityManager em = JPAUtil.getInstancia().crearEntityManager();
 		try {
 			em.getTransaction().begin();
-			em.createQuery("UPDATE Jugador j SET j.puntajeAcumulado = :puntaje WHERE j.id = :id")
-			  .setParameter("puntaje", jugador.getPuntajeAcumulado())
-			  .setParameter("id", jugador.getId())
-			  .executeUpdate();
+			em.merge(jugador);
 			em.getTransaction().commit();
 		} catch (RuntimeException e) {
 			if (em.getTransaction().isActive()) em.getTransaction().rollback();
