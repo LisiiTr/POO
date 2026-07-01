@@ -15,8 +15,7 @@ import java.awt.*;
 public class CarreraFrame extends JFrame {
 
 	// ===== Controller =====
-	private final CarreraController carreraController = new CarreraController(
-			new JugadorDAO(), new CarreraDAO(), new CalculadorPuntaje());
+	private final CarreraController carreraController = new CarreraController(new JugadorDAO(), new CarreraDAO(), new CalculadorPuntaje());
 
 	// ===== Navegacion =====
 	private final CardLayout cards = new CardLayout();
@@ -50,7 +49,6 @@ public class CarreraFrame extends JFrame {
 		setContentPane(cardContainer);
 		cards.show(cardContainer, "registro");
 	}
-
 
 	private JPanel buildPanelRegistro() {
 		JPanel root = new JPanel(new BorderLayout());
@@ -93,11 +91,9 @@ public class CarreraFrame extends JFrame {
 		btnEntrar.addActionListener(e -> onRegistrar());
 
 		formCard.add(UIUtils.fieldLabel("Nombre:"));
-		formCard.add(Box.createRigidArea(new Dimension(0, 6)));
 		formCard.add(nombreField);
 		formCard.add(Box.createRigidArea(new Dimension(0, 14)));
 		formCard.add(UIUtils.fieldLabel("Mail (opcional):"));
-		formCard.add(Box.createRigidArea(new Dimension(0, 6)));
 		formCard.add(mailField);
 		formCard.add(Box.createRigidArea(new Dimension(0, 20)));
 		formCard.add(btnEntrar);
@@ -163,11 +159,11 @@ public class CarreraFrame extends JFrame {
 		lblBienvenida.setText("Hola " + jugadorActual.getNombre() + ", elegí tu caballo:");
 
 		comboCorredores.removeAllItems();
-		for (CorredorDTO c : corredores) {
-			comboCorredores.addItem(c.getNombre()
-				+ "  —  Vel: " + (int) c.getVelocidadBase()
-				+ "  Res: " + (int) c.getResistencia()
-				+ "  (" + c.getEstrategiaNombre() + ")");
+		for (CorredorDTO corredor : corredores) {
+			comboCorredores.addItem(corredor.getNombre()
+				+ "  —  Vel: " + (int) corredor.getVelocidadBase()
+				+ "  Res: " + (int) corredor.getResistencia()
+				+ "  (" + corredor.getEstrategiaNombre() + ")");
 		}
 		comboCorredores.setEnabled(true);
 		btnIniciarCarrera.setEnabled(true);
@@ -189,7 +185,7 @@ public class CarreraFrame extends JFrame {
 		statusLabel.setText("Carrera en " + pista.getNombre() + " (" + (int) pista.getDistanciaTotal() + "m) — comenzó!");
 		pistaPanel.inicializar(estado, pista.getDistanciaTotal());
 
-		timerCarrera = new Timer(350, e -> onTick());
+		timerCarrera = new Timer(100, e -> onTick());
 		timerCarrera.start();
 	}
 
@@ -288,8 +284,6 @@ public class CarreraFrame extends JFrame {
 			}
 
 			Graphics2D g2 = (Graphics2D) g;
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
-			g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
 			int anchoCarril = getWidth() - MARGEN_IZQ - MARGEN_DER;
 			int alturaTotal = corredores.length * ALTO_CARRIL + (corredores.length - 1) * ESPACIO_CARRIL;
